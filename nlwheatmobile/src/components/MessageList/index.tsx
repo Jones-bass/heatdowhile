@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, } from 'react-native';
 import { Message } from '../Message';
 import { styles } from './styles';
 
@@ -14,17 +14,16 @@ export function MessageList() {
     }
   }
 
-   return (
-    <ScrollView style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="never"
+  return (
+      <ScrollView style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="never" //para quando clicar fora o teclado fechar 
       >
-      <Message data={message}/>
-      <Message data={message}/>
-      <Message data={message}/>
-      <Message data={message}/>
-
-    </ScrollView>
+        <Message data={message} />
+        <Message data={message} />
+        <Message data={message} />
+        <Message data={message} />
+      </ScrollView>
   );
 }
 
