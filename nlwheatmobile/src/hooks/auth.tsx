@@ -1,9 +1,12 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as AuthSessions from 'expo-auth-session';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 
-const CLIENT_ID = '59a72636b39e7072e554'; //client do usuario
+const CLIENT_ID = 'CLIENT'; //client do usuario
 const SCOPE = 'read:user'; //somente ler os dados do usuario
+const USER_STORAGE = '@nlwheat:user';
+const TOKEN_STORAGE = '@nlwheat:token';
 
 
 type User = {
@@ -32,7 +35,9 @@ type AuthResponse = {
 type AuthorizationResponse = {
   params: {
     code?: string;
+    error?: string;
   },
+  type?: string;
 }
 
 export const AuthContext = createContext({} as AuthContextData);
@@ -42,24 +47,49 @@ function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
 
   async function signIn() {
-    setIsSigningIn(true);  
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=${SCOPE}`;
-      const { params} = await AuthSessions.startAsync({ authUrl }) as AuthorizationResponse;
+    try {
+      setIsSigningIn(true);
+      const authUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=${SCOPE}`;
+      const authSessionResponse = await AuthSessions.startAsync({ authUrl }) as AuthorizationResponse;
 
-      if (params && params.code) {
-        const authResponse = await api.post('/authenticate', { code: params.code });
+      if (authSessionResponse.type === 'success' && authSessionResponse.params.error !== 'access_denied') {
+        const authResponse = await api.post('/authenticate', { code: authSessionResponse.params.code });
         const { user, token } = authResponse.data as AuthResponse;
-  
-        console.log(authResponse.data);
+
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        await AsyncStorage.setItem(USER_STORAGE, JSON.stringify(user));
+        await AsyncStorage.setItem(TOKEN_STORAGE, token);
+
+        setUser(user);
       }
-        setIsSigningIn(false);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsSigningIn(false);
+    }
   }
+
 
   async function signOut() {
- 
+
   }
 
-//"code": "95619c41bc3a88f4f775",
+  useEffect(() => {
+    async function loadUserStorageData() {
+      const userStorage = await AsyncStorage.getItem(USER_STORAGE);
+      const tokenStorage = await AsyncStorage.getItem(TOKEN_STORAGE);
+
+      if (userStorage && tokenStorage) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${tokenStorage}`;
+        setUser(JSON.parse(userStorage));
+      }
+
+      setIsSigningIn(false);
+    }
+
+    loadUserStorageData();
+  }, []);
+
 
   return (
     <AuthContext.Provider value={{
