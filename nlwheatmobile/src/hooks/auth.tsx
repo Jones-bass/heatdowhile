@@ -3,7 +3,7 @@ import * as AuthSessions from 'expo-auth-session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 
-const CLIENT_ID = 'CLIENT'; //client do usuario
+const CLIENT_ID = 'CLIENT_ID'; //client do usuario
 const SCOPE = 'read:user'; //somente ler os dados do usuario
 const USER_STORAGE = '@nlwheat:user';
 const TOKEN_STORAGE = '@nlwheat:token';
@@ -71,7 +71,9 @@ function AuthProvider({ children }: AuthProviderProps) {
 
 
   async function signOut() {
-
+    setUser(null);
+    await AsyncStorage.removeItem(USER_STORAGE);
+    await AsyncStorage.removeItem(TOKEN_STORAGE);
   }
 
   useEffect(() => {
